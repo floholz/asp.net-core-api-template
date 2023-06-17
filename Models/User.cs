@@ -6,6 +6,7 @@ namespace asp.net_core_api_template.Models;
 
 public class User: IModel<UserResponse>
 {
+    [Key]
     public int Id { get; set; }
     [EmailAddress]
     public string Email { get; set; } = null!;
@@ -20,13 +21,16 @@ public class User: IModel<UserResponse>
     public DateTime CreatedAt { get; set; }
     public int? CreatedById { get; set; }
     public User? CreatedBy { get; set; }
+    public ICollection<User> CreatedUsers { get; } = new List<User>();
     public DateTime? UpdatedAt { get; set; }
     public int? UpdatedById { get; set; }
     public User? UpdatedBy { get; set; }
+    public ICollection<User> UpdatedUsers { get; } = new List<User>();
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public int? DeleteById { get; set; }
     public User? DeleteBy { get; set; }
+    public ICollection<User> DeletedUsers { get; } = new List<User>();
 
     public UserResponse Map()
     {
