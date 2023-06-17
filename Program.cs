@@ -1,25 +1,64 @@
+using asp.net_core_api_template.Database;
+using asp.net_core_api_template.Infrastructure;
+using asp.net_core_api_template.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<PostgresContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresDB"));
+});
+
+builder.Services.AddScoped<UserService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
+    c.SwaggerDoc("web-app", new OpenApiInfo { Title = "Web App API", Version = "v1" });
+    c.SwaggerDoc("mobile-app", new OpenApiInfo { Title = "Mobile App API", Version = "v1" });
+    
+    c.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        if (docName.Contains("web-app"))
+        {
+            return apiDesc.CustomAttributes()
+                .OfType<IncludeInWebappApi>()
+                .Any();
+        }
+        if (docName.Contains("mobile-app"))
+        {
+            return apiDesc.CustomAttributes()
+                .OfType<IncludeInMobileAppApi>()
+                .Any();
+        }
+        return true;
+    });
+});
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(c => c.SerializeAsV2 = true);
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
+        c.SwaggerEndpoint("/swagger/web-app/swagger.json", "Web App API v1");
+        c.SwaggerEndpoint("/swagger/mobile-app/swagger.json", "Mobile App API v1");
+    });
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
