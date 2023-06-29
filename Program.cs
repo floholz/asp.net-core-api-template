@@ -1,7 +1,11 @@
+using System.Text;
 using asp.net_core_api_template.Database;
 using asp.net_core_api_template.Infrastructure;
+using asp.net_core_api_template.Models.Authentication;
 using asp.net_core_api_template.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -11,6 +15,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<PostgresContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresDB"));
+});
+
+var tokenOptions = builder.Configuration.GetSection("token").Get<TokenOptions>();
+// authentication with access token happens here
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(x =>
+{
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(tokenOptions.Secret)),
+        ValidIssuer = tokenOptions.Issuer,
+        ValidAudience = tokenOptions.Audience,
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
 });
 
 builder.Services.AddScoped<UserService>();

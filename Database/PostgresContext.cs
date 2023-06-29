@@ -1,4 +1,5 @@
 ﻿using asp.net_core_api_template.Models;
+using asp.net_core_api_template.Models.Authentication;
 using Microsoft.EntityFrameworkCore;
 
 namespace asp.net_core_api_template.Database;
@@ -8,6 +9,7 @@ public class PostgresContext : DbContext
     public PostgresContext (DbContextOptions<PostgresContext> options) : base(options) { }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +30,9 @@ public class PostgresContext : DbContext
                 .HasOne(e => e.UpdatedBy)
                 .WithMany(e => e.UpdatedUsers)
                 .HasForeignKey(e => e.UpdatedById);
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .ValueGeneratedOnAdd();
             entity.Property(e => e.DeletedAt).HasColumnType("timestamp with time zone");
             entity
                 .HasOne(e => e.DeleteBy)
